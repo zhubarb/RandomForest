@@ -13,7 +13,7 @@ class Decision_Tree:
         self.avaliable_cols = cats + conts
         self.splits = []
 
-    def get_best_split_col(d):
+    def get_best_split_col(self, d):
         best_split_val = 1e10
         best_split_col = None
         for k, v in d.items():
@@ -34,7 +34,7 @@ class Decision_Tree:
         lhs = col <= split
         return (self._side_score(lhs, y) + self._side_score(~lhs, y)) / len(y)
 
-    def _side_score(side, y):
+    def _side_score(self, side, y):
         tot = side.sum()
         if tot <= 1: return 0
         return y[side].std() * tot
@@ -74,13 +74,22 @@ if __name__ == '__main__':
     kaggle.api.competition_download_cli(str(path))
     zipfile.ZipFile(f'{path}.zip').extractall(path)
 
-    df = pd.read_csv(path / 'train.csv')
+    trn_df = pd.read_csv(path / 'train.csv')
     tst_df = pd.read_csv(path / 'test.csv')
 
-    modes = df.mode().iloc[0]
-    proc_data(df, modes)
+    modes = trn_df.mode().iloc[0]
+    proc_data(trn_df, modes)
     proc_data(tst_df, modes)
 
     cats = ["Sex", "Embarked"]
     conts = ['Age', 'SibSp', 'Parch', 'LogFare', "Pclass"]
     dep = "Survived"
+
+    trn_df[cats] = trn_df[cats].apply(lambda x: x.cat.codes)
+    tst_df[cats] = tst_df[cats].apply(lambda x: x.cat.codes)
+
+    # Train
+    dt = Decision_Tree(max_leaf_nodes=4, cats=cats, conts=conts)
+    available_cols = cats + conts
+    selected_cols = []
+    dt.fit(trn_df, available_cols, selected_cols)
